@@ -1,21 +1,34 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
-
-class App extends Component {
-  render() {
-    return (
-      <div className="App">
-        <div className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h2>Welcome to React</h2>
-        </div>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
-      </div>
-    );
-  }
+export default function App() {
+  return (
+    <div className="app">
+      <h3>h</h3>
+      <Logo />
+      <Form />
+      <PackingList />
+      <Stats />
+    </div>
+  );
 }
 
-export default App;
+function Logo() {
+  return <h1>🌴 Far Away 🏖️</h1>;
+}
+function Form() {
+  return (
+    <div className="add-form">
+      <h3>What do you need for your 😍 trip</h3>
+    </div>
+  );
+}
+function PackingList() {
+  return <div className="list">LIST</div>;
+}
+function Stats() {
+  return (
+    <footer>
+      <em>
+        👜 You have x items on your list, and you already packes X (X%) of them.
+      </em>
+    </footer>
+  );
+}
