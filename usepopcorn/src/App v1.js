@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const tempMovieData = [
     {
@@ -46,35 +46,9 @@ const average = (arr) =>
     arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
 export default function App() {
-    const [movies, setMovies] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [err, setError] = useState('');
-    const [watched, setWatched] = useState([]);
-
-    const key = '4a3b711b';
-
-    useEffect(function () {
-        async function fetchMovies() {
-            try {
-                setIsLoading(true);
-                const res = await fetch(
-                    `http://www.omdbapi.com/?apikey=${key}&s=robot`
-                );
-
-                if (!res.ok) throw new Error('Someting went wrong');
-
-                const data = await res.json();
-                if (data.Response === 'False') throw new Error('No Data Found');
-                setMovies(data.Search);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setIsLoading(false);
-            }
-        }
-
-        fetchMovies();
-    }, []);
+    const [movies, setMovies] = useState(tempMovieData);
+    const [isOpen2, setIsOpen2] = useState(true);
+    const [watched, setWatched] = useState(tempWatchedData);
 
     return (
         <>
@@ -85,9 +59,7 @@ export default function App() {
             </NavBar>
             <Main>
                 <Box>
-                    {isLoading && <Loader />}
-                    {!isLoading && !err && <MovieList movies={movies} />}
-                    {err && <ErrorMessage message={err} />}
+                    <MovieList movies={movies} />
                 </Box>
                 <Box>
                     <WatchedSummary watched={watched} />
@@ -96,14 +68,6 @@ export default function App() {
             </Main>
         </>
     );
-}
-
-function ErrorMessage({ message }) {
-    return <p className="error">{message}</p>;
-}
-
-function Loader() {
-    return <p className="loader">Loading...</p>;
 }
 
 function NavBar({ children }) {
@@ -165,7 +129,7 @@ function MovieList({ movies }) {
     return (
         <ul className="list">
             {movies?.map((movie) => (
-                <Movie movie={movie} key={movie.imdbID} />
+                <Movie movie={movie} />
             ))}
         </ul>
     );
