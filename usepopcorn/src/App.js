@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import StarRating from './StarRating';
 
 const tempMovieData = [
     {
@@ -24,18 +25,18 @@ const tempMovieData = [
 const tempWatchedData = [
     {
         imdbID: 'tt1375666',
-        Title: 'Inception',
-        Year: '2010',
-        Poster: 'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg',
+        title: 'Inception',
+        year: '2010',
+        poster: 'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg',
         runtime: 148,
         imdbRating: 8.8,
         userRating: 10,
     },
     {
         imdbID: 'tt0088763',
-        Title: 'Back to the Future',
-        Year: '1985',
-        Poster: 'https://m.media-amazon.com/images/M/MV5BZmU0M2Y1OGUtZjIxNi00ZjBkLTg1MjgtOWIyNThiZWIwYjRiXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_SX300.jpg',
+        title: 'Back to the Future',
+        year: '1985',
+        poster: 'https://m.media-amazon.com/images/M/MV5BZmU0M2Y1OGUtZjIxNi00ZjBkLTg1MjgtOWIyNThiZWIwYjRiXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_SX300.jpg',
         runtime: 116,
         imdbRating: 8.5,
         userRating: 9,
@@ -45,16 +46,31 @@ const tempWatchedData = [
 const average = (arr) =>
     arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
+const key = '4a3b711b';
+
 export default function App() {
     const [movies, setMovies] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [err, setError] = useState('');
     const [query, setQuery] = useState('');
-    const [watched, setWatched] = useState([]);
+    const [watched, setWatched] = useState(tempWatchedData);
+    const [err, setError] = useState('');
+    const [selectedId, setSelectedId] = useState('');
 
-    const key = '4a3b711b';
+    function handleSelectMovie(id) {
+        setSelectedId(id === selectedId ? null : id);
+    }
 
-    console.log(query);
+    function handleCloseMovie() {
+        setSelectedId(null);
+    }
+
+    function handleAddWatched(movie) {
+        setWatched((watched) => [...watched, movie]);
+    }
+
+    function handleDeleteWatched(id) {
+        setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
+    }
 
     useEffect(
         function () {
@@ -98,12 +114,31 @@ export default function App() {
             <Main>
                 <Box>
                     {isLoading && <Loader />}
-                    {!isLoading && !err && <MovieList movies={movies} />}
+                    {!isLoading && !err && (
+                        <MovieList
+                            movies={movies}
+                            onSelectMovie={handleSelectMovie}
+                        />
+                    )}
                     {err && <ErrorMessage message={err} />}
                 </Box>
                 <Box>
-                    <WatchedSummary watched={watched} />
-                    <WatchedMoviesList watched={watched} />
+                    {selectedId ? (
+                        <MovieDetails
+                            selectedId={selectedId}
+                            onCloseMovie={handleCloseMovie}
+                            onAddWatched={handleAddWatched}
+                            watched={watched}
+                        />
+                    ) : (
+                        <>
+                            <WatchedSummary watched={watched} />
+                            <WatchedMoviesList
+                                watched={watched}
+                                onDelete={handleDeleteWatched}
+                            />
+                        </>
+                    )}
                 </Box>
             </Main>
         </>
@@ -171,19 +206,23 @@ function Box({ children }) {
     );
 }
 
-function MovieList({ movies }) {
+function MovieList({ movies, onSelectMovie }) {
     return (
-        <ul className="list">
+        <ul className="list list-movies">
             {movies?.map((movie) => (
-                <Movie movie={movie} key={movie.imdbID} />
+                <Movie
+                    movie={movie}
+                    key={movie.imdbID}
+                    onSelectMovie={onSelectMovie}
+                />
             ))}
         </ul>
     );
 }
 
-function Movie({ movie }) {
+function Movie({ movie, onSelectMovie }) {
     return (
-        <li key={movie.imdbID}>
+        <li key={movie.imdbID} onClick={() => onSelectMovie(movie.imdbID)}>
             <img src={movie.Poster} alt={`${movie.Title} poster`} />
             <h3>{movie.Title}</h3>
             <div>
@@ -193,6 +232,125 @@ function Movie({ movie }) {
                 </p>
             </div>
         </li>
+    );
+}
+
+function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
+    const [movie, setMovie] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const [userRating, setUserRating] = useState('');
+    const isWatched = watched.map((movie) => movie.imdbID).includes(selectedId);
+    const watchedUserRating = watched.find(
+        (movie) => movie.imdbID === selectedId
+    )?.userRating;
+
+    useEffect(() => {
+        async function getMovieDetails() {
+            setIsLoading(true);
+            const res = await fetch(
+                `http://www.omdbapi.com/?apikey=${key}&i=${selectedId}`
+            );
+
+            const data = await res.json();
+            setMovie(data);
+            setIsLoading(false);
+        }
+
+        getMovieDetails();
+    }, [selectedId]);
+
+    const {
+        Title: title,
+        Year: year,
+        Poster: poster,
+        Runtime: runtime,
+        imdbRating,
+        Plot: plot,
+        Released: released,
+        Actors: actors,
+        Director: director,
+        Genre: genre,
+    } = movie;
+
+    function handleAdd() {
+        const newWatchedMovie = {
+            imdbID: selectedId,
+            title,
+            year,
+            poster,
+            imdbRating: Number(imdbRating),
+            runtime: Number(runtime.split(' ').at(0)),
+            userRating,
+        };
+
+        onAddWatched(newWatchedMovie);
+        onCloseMovie();
+    }
+
+    useEffect(
+        function () {
+            if (title) document.title = `Movie | ${title}`;
+        },
+        [title]
+    );
+    return (
+        <div className="details">
+            {isLoading ? (
+                <Loader />
+            ) : (
+                <>
+                    <header>
+                        <button className="btn-back" onClick={onCloseMovie}>
+                            &larr;
+                        </button>
+                        <img src={poster} alt={'Postr'} />
+                        <div className="details-overview">
+                            <h2>{title}</h2>
+                            <p>
+                                {released} &bull; {movie.Runtime}
+                            </p>
+                            <p>{genre}</p>
+                            <p>
+                                <span>⭐</span>
+                                {imdbRating} IMDb rating
+                            </p>
+                        </div>
+                    </header>
+
+                    <section>
+                        <div className="rating">
+                            {!isWatched ? (
+                                <>
+                                    <StarRating
+                                        maxRating={10}
+                                        size={24}
+                                        onSetRating={setUserRating}
+                                    />
+
+                                    {userRating > 0 && (
+                                        <button
+                                            className="btn-add"
+                                            onClick={handleAdd}
+                                        >
+                                            + Add to List
+                                        </button>
+                                    )}
+                                </>
+                            ) : (
+                                <p>
+                                    You rated this movie {watchedUserRating} ⭐
+                                </p>
+                            )}
+                        </div>
+                        <p>
+                            <em>{movie.Plot}</em>
+                        </p>
+                        <p>Starring{movie.Actors}</p>
+                        <p>Directed by {movie.Director}</p>
+                    </section>
+                </>
+            )}
+        </div>
     );
 }
 
@@ -211,35 +369,39 @@ function WatchedSummary({ watched }) {
                 </p>
                 <p>
                     <span>⭐️</span>
-                    <span>{avgImdbRating}</span>
+                    <span>{avgImdbRating.toFixed(2)}</span>
                 </p>
                 <p>
                     <span>🌟</span>
-                    <span>{avgUserRating}</span>
+                    <span>{avgUserRating.toFixed(2)}</span>
                 </p>
                 <p>
                     <span>⏳</span>
-                    <span>{avgRuntime} min</span>
+                    <span>{avgRuntime.toFixed(2)} min</span>
                 </p>
             </div>
         </div>
     );
 }
 
-function WatchedMoviesList({ watched }) {
+function WatchedMoviesList({ watched, onDelete }) {
     return (
         <ul className="list">
             {watched.map((movie) => (
-                <WatchedMovie key={movie.imdbID} movie={movie} />
+                <WatchedMovie
+                    key={movie.imdbID}
+                    movie={movie}
+                    onDelete={onDelete}
+                />
             ))}
         </ul>
     );
 }
 
-function WatchedMovie({ movie }) {
+function WatchedMovie({ movie, onDelete }) {
     return (
         <li key={movie.imdbID}>
-            <img src={movie.Poster} alt={`${movie.Title} poster`} />
+            <img src={movie.poster} alt={`${movie.title} poster`} />
             <h3>{movie.Title}</h3>
             <div>
                 <p>
@@ -254,6 +416,13 @@ function WatchedMovie({ movie }) {
                     <span>⏳</span>
                     <span>{movie.runtime} min</span>
                 </p>
+
+                <button
+                    className="btn-delete"
+                    onClick={() => onDelete(movie.imdbID)}
+                >
+                    X
+                </button>
             </div>
         </li>
     );
