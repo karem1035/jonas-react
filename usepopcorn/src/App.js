@@ -243,11 +243,15 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
 
   useEffect(
     function () {
-      document.addEventListener('keydown', function (e) {
+      function handleKeyDown(e) {
         if (e.code === 'Escape') {
           onCloseMovie();
         }
-      });
+      }
+      document.addEventListener('keydown', handleKeyDown);
+      return function () {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
     },
     [onCloseMovie]
   );
