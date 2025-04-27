@@ -267,7 +267,6 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
 
     [title]
   );
-
   return (
     <div className="details">
       {isLoading ? (
